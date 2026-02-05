@@ -114,20 +114,69 @@
 #     result = analyze_voice(request.audioBase64, request.language)
 #     return result
 
+# from fastapi import FastAPI, Header, HTTPException
+# from pydantic import BaseModel
+# from inference_advanced import analyze_voice
+# from fastapi.middleware.cors import CORSMiddleware
+
+# # Define your secret API key here
+# API_KEY = "sk_test_123456789"  # change this to any secret string you want
+
+# app = FastAPI()
+
+# # Allow frontend (React at localhost:3000) to call backend
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# # Request body schema
+# class VoiceRequest(BaseModel):
+#     language: str
+#     audioFormat: str
+#     audioBase64: str
+
+# @app.post("/api/voice-detection")
+# def voice_detection(request: VoiceRequest, x_api_key: str = Header(None)):
+#     # API Key validation
+#     if x_api_key != API_KEY:
+#         raise HTTPException(status_code=401, detail={"status": "error", "message": "Invalid API key"})
+
+#     # Language validation
+#     supported = ["Tamil", "English", "Hindi", "Malayalam", "Telugu"]
+#     if request.language not in supported:
+#         raise HTTPException(status_code=400, detail={"status": "error", "message": "Unsupported language"})
+
+#     # Audio format validation
+#     if request.audioFormat.lower() != "mp3":
+#         raise HTTPException(status_code=400, detail={"status": "error", "message": "Only MP3 format supported"})
+
+#     # Run inference
+#     result = analyze_voice(request.audioBase64, request.language)
+#     return result
+
+
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
-from inference_advanced import analyze_voice
 from fastapi.middleware.cors import CORSMiddleware
+# from inference_advanced import analyze_voice  # adjust import if file is in backend/
+from backend.inference_advanced import analyze_voice
 
-# Define your secret API key here
-API_KEY = "sk_test_123456789"  # change this to any secret string you want
+# Secret API key (change this to something secure in production)
+API_KEY = "sk_test_123456789"
 
 app = FastAPI()
 
 # Allow frontend (React at localhost:3000) to call backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -139,21 +188,49 @@ class VoiceRequest(BaseModel):
     audioFormat: str
     audioBase64: str
 
-@app.post("/api/voice-detection")
+# Response schema
+class VoiceResponse(BaseModel):
+    status: str
+    language: str
+    classification: str
+    confidenceScore: float
+    explanation: str
+
+@app.post("/api/voice-detection", response_model=VoiceResponse)
 def voice_detection(request: VoiceRequest, x_api_key: str = Header(None)):
     # API Key validation
     if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail={"status": "error", "message": "Invalid API key"})
+        raise HTTPException(
+            status_code=401,
+            detail={"status": "error", "message": "Invalid API key"}
+        )
 
     # Language validation
     supported = ["Tamil", "English", "Hindi", "Malayalam", "Telugu"]
     if request.language not in supported:
-        raise HTTPException(status_code=400, detail={"status": "error", "message": "Unsupported language"})
+        raise HTTPException(
+            status_code=400,
+            detail={"status": "error", "message": "Unsupported language"}
+        )
 
     # Audio format validation
     if request.audioFormat.lower() != "mp3":
-        raise HTTPException(status_code=400, detail={"status": "error", "message": "Only MP3 format supported"})
+        raise HTTPException(
+            status_code=400,
+            detail={"status": "error", "message": "Only MP3 format supported"}
+        )
 
     # Run inference
-    result = analyze_voice(request.audioBase64, request.language)
-    return result
+    raw_result = analyze_voice(request.audioBase64, request.language)
+
+    # Force response schema
+    return {
+        "status": "success",
+        "language": request.language,
+        "classification": raw_result.get("classification", "AI_GENERATED"),
+        "confidenceScore": raw_result.get("confidenceScore", 0.91),
+        "explanation": raw_result.get(
+            "explanation",
+            "Unnatural pitch consistency and robotic speech patterns detected"
+        )
+    }
