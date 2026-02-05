@@ -1,2 +1,4 @@
 # Ignore Hugging Face models
 models/
+__pycache__/
+*.pyc
