@@ -116,7 +116,7 @@
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
-from .inference_advanced import analyze_voice
+from inference_advanced import analyze_voice
 from fastapi.middleware.cors import CORSMiddleware
 
 # Define your secret API key here
