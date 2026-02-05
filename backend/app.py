@@ -163,7 +163,7 @@ from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 # from inference_advanced import analyze_voice  # adjust import if file is in backend/
-from backend.inference_advanced import analyze_voice
+from inference_advanced import analyze_voice
 
 # Secret API key (change this to something secure in production)
 API_KEY = "sk_test_123456789"
